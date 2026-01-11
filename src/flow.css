@@ -1,0 +1,10 @@
+.palette-component{
+    width: 60px;
+    height: 100%;
+    float: left;
+}
+.diagram-component{
+    width: calc(100% - 60px);
+    height: 100%;
+    float: left;
+}

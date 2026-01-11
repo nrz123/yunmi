@@ -1,0 +1,8 @@
+.diagram-analysis{
+    width: 100%;
+    height: calc(100% - 32px);
+}
+.palette-analysis{
+    width: 100%;
+    height: calc(100% - 32px);
+}

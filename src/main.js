@@ -1,0 +1,427 @@
+const { app, BrowserWindow, BaseWindow, Menu, session, ipcMain, dialog, BrowserView, net, shell } = require('electron')
+const Excel = require('exceljs')
+const fs = require('fs')
+const crypto = require('crypto')
+const { Run } = require('./run.js')
+if (!app.requestSingleInstanceLock()) app.quit()
+app.commandLine.appendSwitch('disable-site-isolation-trials')
+app.commandLine.appendSwitch("disable-web-security")
+app.commandLine.appendSwitch('ignore-certificate-errors')
+app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors')
+app.commandLine.appendSwitch('disable-features', 'UserAgentClientHint')
+let isDev = !app.isPackaged
+isDev || Menu.setApplicationMenu(null)
+let password = ''
+let protocal = 'http://'
+let serverHost = '127.0.0.1:80'
+let set = {}
+let appPath = app.getAppPath()
+let login = () => net.fetch(protocal + serverHost + '/users/login', {
+  method: "POST",
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    password: password
+  })
+}).then(res => res.json())
+ipcMain.on('protocal', event => event.returnValue = protocal)
+ipcMain.on('serverHost', event => event.returnValue = serverHost)
+ipcMain.on('password', event => event.returnValue = password)
+ipcMain.on('defaultCloud', event => event.returnValue = defaultCloud)
+ipcMain.on('set', event => event.returnValue = set)
+ipcMain.on('setCookie', (event, cookie) => session.defaultSession.cookies.set(cookie))
+ipcMain.on('openWeb', (event, path) => new BrowserWindow({
+  width: 800,
+  height: 500,
+  alwaysOnTop: true,
+  webPreferences: {
+    webSecurity: false,
+    nodeIntegration: true,
+    contextIsolation: false,
+    backgroundThrottling: false,
+  }
+}).webContents.loadURL(path))
+ipcMain.on('quit', event => app.quit())
+ipcMain.on('external', (event, url) => shell.openExternal(url))
+let downloaddir = 'yunmidownload'
+ipcMain.on('downloaddir', event => event.returnValue = downloaddir)
+ipcMain.handle('fetch', (event, url, options) => net.fetch(url, options).then(res => res.json()))
+let init = async () => {
+  let cookies = await session.defaultSession.cookies.get({ url: "http://127.0.0.1:52126" })
+  cookies.forEach(cookie => {
+    if (cookie.name == 'protocal') protocal = cookie.value
+    if (cookie.name == 'password') password = cookie.value
+    if (cookie.name == 'serverHost') serverHost = cookie.value
+  })
+}
+let webContentsSet = new Set()
+let createWindow = () => {
+  const win = new BrowserWindow({
+    width: 1600,
+    height: 1000,
+    webPreferences: {
+      webSecurity: false,
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false,
+    }
+  })
+  let viewMap = {}
+  ipcMain.handle('viewManage', (event, id, type, ...args) => {
+    let view = viewMap[id]
+    if (!view || view.webContents.isDestroyed()) {
+      switch (type) {
+        case 'viewModel': {
+          view = viewMap[id] = new BrowserView({
+            webPreferences: {
+              webSecurity: false,
+              backgroundThrottling: false,
+              sandbox: true,
+              plugins: true,
+              partition: id,
+              contextIsolation: false
+            }
+          })
+          view.webContents.setWindowOpenHandler(detail => {
+            let { url, postBody, referrer } = detail
+            let loadOptions = {
+              httpReferrer: referrer
+            }
+            if (postBody != null) {
+              const { data, contentType, boundary } = postBody
+              loadOptions.postData = data
+              loadOptions.extraHeaders = `content-type: ${contentType}; boundary=${boundary}`
+            }
+            view.webContents.loadURL(url, loadOptions)
+            return { action: 'deny' }
+          })
+          view.setAutoResize({ height: true })
+        } break
+        case 'viewShow': {
+          view = viewMap[id] = new BrowserView({
+            webPreferences: {
+              webSecurity: false,
+              backgroundThrottling: false,
+              sandbox: true,
+              plugins: true,
+              partition: id,
+              disableDialogs: true,
+              contextIsolation: false,
+              preload: appPath + '/src/bundle.js'
+            }
+          })
+          view.viewMode = true
+          webContentsSet.add(view.webContents)
+          view.webContents.on('destroyed', () => {
+            webContentsSet.delete(view.webContents)
+          })
+          view.webContents.on('ipc-message', (event, channel, value) => {
+            if (channel == 'XPath') {
+              win.webContents.send('XPath-' + id, value)
+            }
+            if (channel == 'setListener') {
+              view.viewMode && view.webContents.executeJavaScript('window.runApi.SetListener()')
+            }
+          })
+          view.webContents.setWindowOpenHandler(detail => {
+            const { url, referrer, postBody } = detail
+            const loadOptions = { httpReferrer: referrer }
+            if (postBody != null) {
+              const { data, contentType, boundary } = postBody
+              loadOptions.postData = data
+              loadOptions.extraHeaders = `content-type: ${contentType}; boundary=${boundary}`
+            }
+            view.webContents.loadURL(url, loadOptions)
+            return { action: 'deny' }
+          })
+          view.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
+            if (view.webContents) details.requestHeaders['User-Agent'] = view.webContents.getUserAgent()
+            callback({ requestHeaders: details.requestHeaders })
+          })
+          view.webContents.on('did-finish-load', e => view.viewMode && view.webContents.executeJavaScript('window.runApi.SetListener()'))
+          view.webContents.on('did-frame-finish-load', e => view.viewMode && view.webContents.executeJavaScript('window.runApi.SetListener()'))
+          view.setAutoResize({ height: true })
+        } break
+        default: return
+      }
+    }
+    switch (type) {
+      case 'viewModel':
+      case 'viewShow': {
+        win.setBrowserView(view)
+      } break
+      case 'viewResize': {
+        view.setBounds({ ...view.getBounds(), ...args[0] })
+      } break
+      case 'viewHide': {
+        win.removeBrowserView(view)
+      } break
+      case 'viewRemove': {
+        win.removeBrowserView(view)
+        view.webContents.destroy()
+        delete viewMap[id]
+      } break
+      case 'devTools': {
+        view.webContents.isDevToolsOpened() ? view.webContents.closeDevTools() : view.webContents.openDevTools()
+      } break
+      case 'viewEnter': {
+        let array = Array.from(args[0])
+        args[1] && array.push('Enter')
+        let f = () => {
+          let t = array.shift()
+          if (!t) return
+          view.webContents.sendInputEvent({ type: "keyDown", keyCode: t })
+          view.webContents.sendInputEvent({ type: "char", keyCode: t })
+          view.webContents.sendInputEvent({ type: "keyUp", keyCode: t })
+          setTimeout(f, 100)
+        }
+        f()
+      } break
+      case 'setCookies': return Promise.all(args[0].map(cookie => view.webContents.session.cookies.set(cookie)))
+      case 'clearCookies': return view.webContents.session.clearStorageData({ storages: ['cookies'] })
+      case 'viewCookies': {
+        let url = view.webContents.getURL()
+        return view.webContents.session.cookies.get({ url: url }).then(cookies => cookies.map(cookie => {
+          return { url: url, ...cookie }
+        }))
+      }
+      case 'viewMode': {
+        view.viewMode = args[0]
+        view.webContents.executeJavaScript(view.viewMode ? 'window.runApi.SetListener()' : 'window.runApi.ClearListener()')
+      } break
+      case 'setProxy': {
+        view.webContents.session.setProxy({ proxyRules: args[0] })
+      } break
+      case 'setUserAgent': {
+        view.webContents.setUserAgent(args[0])
+      } break
+      default: return view.webContents[type](...args)
+    }
+  })
+  win.webContents.session.webRequest.onBeforeSendHeaders({ urls: ['ws://*/*', 'wss://*/*'] }, async (details, callback) => {
+    let cookies = await session.defaultSession.cookies.get({ url: details.url })
+    details.requestHeaders['Cookie'] = ''
+    cookies.forEach(cookie => {
+      details.requestHeaders['Cookie'] += (cookie.name + '=' + cookie.value + ';')
+    })
+    callback({ requestHeaders: details.requestHeaders })
+  })
+  win.webContents.loadURL(isDev ? 'http://127.0.0.1:3000/' : 'file:///' + appPath + '/build/index.html')
+  win.on('closed', () => app.quit())
+  app.on('second-instance', (event, commandLine, workingDirectory) => win.focus())
+}
+let start = async () => {
+  await init()
+  const win = new BrowserWindow({
+    width: 305,
+    height: 450,
+    resizable: false,
+    scrollBounce: false,
+    webPreferences: {
+      webSecurity: false,
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false,
+    }
+  })
+  win.webContents.on('ipc-message', (event, channel, value) => {
+    if (channel == 'login') {
+      protocal = value.protocal
+      serverHost = value.serverHost
+      password = value.password
+      let date = Math.round(new Date().getTime() / 1000) + 30 * 24 * 60 * 60
+      session.defaultSession.cookies.set({ url: "http://127.0.0.1:52126", name: 'protocal', value: protocal, expirationDate: date })
+      session.defaultSession.cookies.set({ url: "http://127.0.0.1:52126", name: 'serverHost', value: serverHost, expirationDate: date })
+      session.defaultSession.cookies.set({ url: "http://127.0.0.1:52126", name: 'password', value: password, expirationDate: date })
+      login().then(data => {
+        if (data == 'success') {
+          console.log('登录成功')
+          createWindow()
+          win.destroy()
+          return
+        }
+        console.log('登录失败')
+        win.webContents.send('message', '登录失败')
+      }).catch(e => {
+        console.log('登录失败')
+        win.webContents.send('message', '登录失败')
+      })
+    }
+  })
+  win.webContents.loadURL(isDev ? 'http://127.0.0.1:3000/#login' : 'file:///' + appPath + '/build/index.html#login')
+}
+app.whenReady().then(start)
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    start()
+  }
+})
+ipcMain.handle('export', (event, options) => dialog.showSaveDialog(options))
+ipcMain.handle('import', (event, options) => dialog.showOpenDialog(options))
+const importData = (id, datas) => net.fetch(serverHost + "/users/importData", {
+  method: "POST",
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    id: id,
+    datas: datas
+  })
+})
+ipcMain.on('excelImport', async (event, id, path) => {
+  let workbookReader = new Excel.stream.xlsx.WorkbookReader(path, {
+    worksheets: 'emit',
+  })
+  let datas = []
+  let length = 0
+  for await (const worksheetReader of workbookReader) {
+    for await (const row of worksheetReader) {
+      let data = []
+      if (!length) length = row.values.length - 1
+      for (let i = 0; i < length; i++)data[i] = row.values[i + 1] ? row.values[i + 1] : ''
+      datas.push(data)
+      if (row._number == 1) {
+        await importData(id, datas)
+        datas.length = 0
+        continue
+      }
+      if (datas.length == 50) {
+        importData(id, datas)
+        datas.length = 0
+      }
+    }
+  }
+  if (datas.length > 0) {
+    importData(id, datas)
+    datas.length = 0
+  }
+})
+const works = {}
+ipcMain.handle('excelExport', (event, path, data, key) => new Promise(resolve => {
+  if (!works[key]) {
+    works[key] = {
+      workbook: new Excel.stream.xlsx.WorkbookWriter({
+        filename: path,
+        useStyles: true,
+        useSharedStrings: true
+      })
+    }
+    works[key].worksheet = works[key].workbook.addWorksheet('sheet1')
+  }
+  const worksheet = works[key].worksheet
+  data.forEach(d => worksheet.addRow(d).commit())
+  resolve()
+}))
+ipcMain.handle('excelEnd', (event, key) => new Promise(resolve => {
+  works[key] ? works[key].workbook.commit().then(() => resolve('success')) : resolve('error')
+  works[key] = undefined
+}))
+ipcMain.handle('write', (event, filePath, data) => new Promise(resolve => fs.writeFile(filePath, data, e => { resolve(e ? 'error' : 'success') })))
+ipcMain.handle('read', (event, filePath) => new Promise(resolve => fs.readFile(filePath, 'utf8', (e, data) => { resolve(e ? null : data) })))
+let videoMap = {}
+let vend = (webContents, fid) => {
+  let fmap = videoMap[webContents]
+  if (fmap) {
+    let umap = fmap[fid]
+    if (umap) {
+      let filenames = [], codecs = []
+      for (let uid in umap) {
+        if (umap[uid]) {
+          umap[uid].stream.end()
+          let index = umap[uid].mimeType.indexOf('codecs=')
+          index > -1 && codecs.push(umap[uid].mimeType.slice(index + 7).replace(new RegExp('"', 'g'), ''))
+          filenames.push(umap[uid].filename)
+        }
+      }
+      filenames.forEach(filename => {
+        fs.writeFile(downloaddir + '/' + fid + '/' + filename + 'v.m3u8', '#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\n' + filename + '.mp4\n#EXT-X-ENDLIST', e => {
+          fs.writeFile(downloaddir + '/' + fid + '/' + filename + '.m3u8', '#EXTM3U\n#EXT-X-STREAM-INF:CODECS="' + codecs.join() + '"\n' + filename + 'v.m3u8', e => {
+          })
+        })
+      })
+      delete fmap[fid]
+    }
+  }
+}
+ipcMain.on('videoend', (event, fid) => {
+  vend(event.sender, fid)
+})
+ipcMain.on('video', (event, fid, uid, mimeType, buffer) => {
+  let webContents = event.sender
+  if (webContentsSet.has(webContents)) {
+    event.returnValue = true
+    return
+  }
+  if (!videoMap[webContents]) {
+    videoMap[webContents] = {}
+    webContents.on('destroyed', () => {
+      let fmap = videoMap[webContents]
+      if (fmap) {
+        for (let fid in fmap) {
+          vend(webContents, fid)
+        }
+      }
+      delete videoMap[webContents]
+    })
+  }
+  let fmap = videoMap[webContents]
+  if (!fmap[fid]) {
+    fmap[fid] = {}
+  }
+  let umap = fmap[fid]
+  if (!umap[uid]) {
+    fs.existsSync(downloaddir) || fs.mkdirSync(downloaddir)
+    fs.existsSync(downloaddir + '/' + fid) || fs.mkdirSync(downloaddir + '/' + fid)
+    let filename = 'video' + Object.keys(umap).length
+    umap[uid] = { stream: fs.createWriteStream(downloaddir + '/' + fid + '/' + filename + '.mp4'), mimeType: mimeType, filename: filename }
+  }
+  let fBuffer = Buffer.from(buffer)
+  umap[uid].stream.write(fBuffer)
+  event.returnValue = true
+})
+let tasks = {}
+ipcMain.on('runTask', (event, task) => {
+  let win = new BaseWindow({
+    width: 1200,
+    height: 800,
+    resizable: false
+  })
+  let { id, step } = task
+  step = JSON.parse(step)
+  let run = tasks[id] = new Run(step, appPath + '/src/bundle.js', id, win)
+  run.log = console.log
+  run.checkData = async () => {
+    return false
+  }
+  win.on('closed', () => run.stop())
+  run.on('data', data => {
+    data.forEach(d => {
+      if (d.type == 'IMG') {
+        fs.existsSync(downloaddir) || fs.mkdirSync(downloaddir)
+        let value = d.value
+        value = value.substring(22)
+        value = Buffer.from(value, 'base64')
+        let fname = crypto.createHash('md5').update(value).digest('hex')
+        d.value = downloaddir + "/" + fname + '.png'
+        fs.writeFile(d.value, value, e => { })
+      }
+    })
+    event.sender.send('saveData', id, data)
+  })
+  run.on('end', e => {
+    delete tasks[id]
+    run.removeAllListeners()
+    event.sender.send('end', id)
+  })
+  run.start()
+})
+ipcMain.on('stopTask', (event, id) => {
+  let run = tasks[id]
+  run && run.stop()
+})
