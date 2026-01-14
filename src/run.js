@@ -80,7 +80,6 @@ class Run extends require('events').EventEmitter {
             if (this.view.webContents) details.requestHeaders['User-Agent'] = this.view.webContents.getUserAgent()
             callback({ requestHeaders: details.requestHeaders })
         })
-        this.view.webContents.openDevTools()
         this.win && !this.win.isDestroyed() && this.win.contentView.addChildView(this.view)
         this.view.setBounds(this.bounds)
     }
