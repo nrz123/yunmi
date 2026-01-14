@@ -57,7 +57,6 @@ window.runApi = {
     },
     Edit: (ListBase64, XPathBase64) => {
         let node = ebyXPath(base64Decode(XPathBase64))[0]
-        console.log(node)
         if (!node) return
         JSON.parse(base64Decode(ListBase64)).forEach(item => { node[item.name] = item.value })
     },
@@ -119,11 +118,11 @@ window.runApi = {
                                             let time = 0
                                             let interval = setInterval(() => {
                                                 ipcRenderer.send('refresh')
+                                                node.play()
                                                 let t = node.buffered.end(0)
                                                 if (t - time > 2) {
                                                     time = t
                                                     node.currentTime = time - 2
-                                                    node.play()
                                                 }
                                             }, 1000)
                                             await new Promise(resolve => {
