@@ -1,5 +1,4 @@
 const { WebContentsView } = require('electron')
-const crypto = require('crypto')
 const { encode } = require('urlencode')
 const base64Encode = s => s ? Buffer.from(encode(s)).toString('base64') : ''
 class Run extends require('events').EventEmitter {
@@ -12,8 +11,10 @@ class Run extends require('events').EventEmitter {
         this.bounds = bounds ? bounds : { x: 0, y: 0, width: 1185, height: 762 }
         this.data = []
         this.head = []
-        this.hashSet = new Set()
+        this.stepMap = {}
         let init = s => {
+            this.stepMap[s.key] = s
+            if (s.List) s.RecList = []
             s.nodeName == 'ExtractDataAction' && s.List.forEach(extract => this.head.push({ key: extract.key, name: extract.name, type: extract.type }))
             s.steps && s.steps.forEach(s => init(s))
         }
@@ -246,35 +247,8 @@ class Run extends require('events').EventEmitter {
         setReject()
         this.log(step.nodeName)
         switch (step.nodeName) {
-            case 'NavigateAction': {
-                step.RecList = []
-                let index = 0
-                let loop = () => {
-                    if (this.isStop) return
-                    let value
-                    while (true) {
-                        value = step.List[index++]
-                        if (!value || !value.RecInvalids || value.RecInvalids.indexOf(this.RecAction ? this.RecAction.recursion : 0) == -1)
-                            break
-                    }
-                    if (!value) value = step.RecList.shift()
-                    if (value) {
-                        let RecAction = this.RecAction
-                        this.RecAction = step
-                        this.RecAction.recursion = value.recursion ? value.recursion : 0
-                        this.waitFinish(step.WaitSeconds == null ? 3 : step.WaitSeconds).then(error => error == 'timeout' ? loop() : this.isStop || this.runSteps(step.steps).then(setReject).then(ret => {
-                            this.RecAction = RecAction
-                            this.log(ret)
-                            ret == 'Break' ? resolve() : loop()
-                        }).catch(reject))
-                        this.log('open:' + value.value)
-                        this.view.webContents.loadURL(value.value)
-                    } else {
-                        resolve()
-                    }
-                }
-                this.isStop || loop()
-            } break
+            case 'NavigateAction':
+            case 'EnterTextAction':
             case 'CookieAction': {
                 let index = 0
                 let loop = () => {
@@ -282,19 +256,51 @@ class Run extends require('events').EventEmitter {
                     let value
                     while (true) {
                         value = step.List[index++]
-                        if (!value || !value.RecInvalids || value.RecInvalids.indexOf(this.RecAction ? this.RecAction.recursion : 0) == -1)
+                        if (!value || !value.RecInvalids || value.RecInvalids.indexOf(this.recursion ? this.recursion : 0) == -1)
                             break
                     }
-                    value ? new Promise(resolve => {
-                        step.Clear ? this.view.webContents.session.clearStorageData({ storages: ['cookies'] }).then(resolve) : resolve()
-                    }).then(() => {
-                        Promise.all(value.map(cookie => this.view.webContents.session.cookies.set(cookie))).then(() => {
-                            this.isStop || this.runSteps(step.steps).then(setReject).then(ret => {
+                    if (!value) value = step.RecList.shift()
+                    if (value) {
+                        if (step.nodeName == 'NavigateAction') {
+                            step.NewPage && this.initView()
+                            let recursion = this.recursion
+                            this.recursion = step.recursion = value.recursion ? value.recursion : 0
+                            this.waitFinish(step.WaitSeconds == null ? 3 : step.WaitSeconds).then(error => error == 'timeout' ? loop() : this.isStop || this.runSteps(step.steps).then(setReject).then(ret => {
+                                this.recursion = recursion
+                                step.recursion = 0
                                 this.log(ret)
                                 ret == 'Break' ? resolve() : loop()
-                            }).catch(reject)
-                        })
-                    }) : resolve()
+                            }).catch(reject))
+                            this.log('open:' + value.value)
+                            this.view.webContents.loadURL(value.value)
+                        } else if (step.nodeName == 'EnterTextAction') {
+                            this.log('xpah:' + [this.XPath, step.XPath].join(''))
+                            let XPathBase64 = base64Encode([this.XPath, step.XPath].join(''))
+                            let operasBase64 = base64Encode(JSON.stringify(['mouseover', 'mousedown', 'click', 'mouseup', 'change']))
+                            let code = `window.runApi.Opera('${XPathBase64}','${operasBase64}')`
+                            this.exec(code).then(() => this.enterText(value.value, step.Enter).then(() => {
+                                let recursion = this.recursion
+                                this.recursion = step.recursion = value.recursion ? value.recursion : 0
+                                this.isStop || this.runSteps(step.steps).then(setReject).then(ret => {
+                                    this.recursion = recursion
+                                    step.recursion = 0
+                                    this.log(ret)
+                                    ret == 'Break' ? resolve() : loop()
+                                }).catch(reject)
+                            }).catch(reject)).catch(reject)
+                        } else if (step.nodeName == 'CookieAction') {
+                            new Promise(resolve => {
+                                step.Clear ? this.view.webContents.session.clearStorageData({ storages: ['cookies'] }).then(resolve) : resolve()
+                            }).then(() => Promise.all(value.map(cookie => this.view.webContents.session.cookies.set(cookie))).then(() => {
+                                this.isStop || this.runSteps(step.steps).then(setReject).then(ret => {
+                                    this.log(ret)
+                                    ret == 'Break' ? resolve() : loop()
+                                }).catch(reject)
+                            }))
+                        }
+                    } else {
+                        resolve()
+                    }
                 }
                 this.isStop || loop()
             } break
@@ -302,7 +308,7 @@ class Run extends require('events').EventEmitter {
                 let index = 0
                 let loop = () => {
                     if (this.isStop) return
-                    let ListBase64 = base64Encode(JSON.stringify(step.List.map(x => x.RecInvalids && x.RecInvalids.indexOf(this.RecAction ? this.RecAction.recursion : 0) > -1 ? '' : [this.XPath, x.value].join(''))))
+                    let ListBase64 = base64Encode(JSON.stringify(step.List.map(value => value.RecInvalids && value.RecInvalids.indexOf(this.recursion ? this.recursion : 0) > -1 ? '' : [this.XPath, value.value].join(''))))
                     let code = `window.runApi.XPaths('${ListBase64}')`
                     this.exec(code).then(XPaths => {
                         if (!XPaths) return resolve()
@@ -322,32 +328,10 @@ class Run extends require('events').EventEmitter {
                 }
                 this.isStop || loop()
             } break
-            case 'EnterTextAction': {
-                let index = 0
-                let loop = () => {
-                    if (this.isStop) return
-                    let value
-                    while (true) {
-                        value = step.List[index++]
-                        if (!value || !value.RecInvalids || value.RecInvalids.indexOf(this.RecAction ? this.RecAction.recursion : 0) == -1)
-                            break
-                    }
-                    if (value) {
-                        this.log('xpah:' + [this.XPath, step.XPath].join(''))
-                        let XPathBase64 = base64Encode([this.XPath, step.XPath].join(''))
-                        let operasBase64 = base64Encode(JSON.stringify(['mouseover', 'mousedown', 'click', 'mouseup', 'change']))
-                        let code = `window.runApi.Opera('${XPathBase64}','${operasBase64}')`
-                        this.exec(code).then(() => this.enterText(value.value, step.Enter).then(() => {
-                            this.isStop || this.runSteps(step.steps).then(setReject).then(ret => {
-                                this.log(ret)
-                                ret == 'Break' ? resolve() : loop()
-                            }).catch(reject)
-                        }).catch(reject)).catch(reject)
-                    } else {
-                        resolve()
-                    }
-                }
-                this.isStop || loop()
+            case 'WaitAction': {
+                let LoopTime = step.LoopTime ? step.LoopTime : 1
+                let loop = () => this.isStop || this.runSteps(step.steps).then(setReject).then(ret => ret == 'Break' ? resolve() : this.timeout = setTimeout(() => --LoopTime ? loop() : resolve(), 1000 * (step.WaitSeconds ? step.WaitSeconds : 0))).catch(reject)
+                loop()
             } break
             case 'ClickAction': {
                 this.log('xpah:' + [this.XPath, step.XPath].join(''))
@@ -365,22 +349,21 @@ class Run extends require('events').EventEmitter {
                 this.exec(code).then(async data => {
                     if (data.length == 0) return resolve()
                     data = await Promise.all(data.map(async d => {
-                        let { key, value, recursion, regs } = d
+                        let { key, value, out, regs } = d
                         regs && regs.forEach(reg => {
                             let { source, target } = reg
                             try { value = value.replace(new RegExp(source ? source : '', 'img'), target ? target : '') } catch { }
                         })
-                        if (recursion && value && this.RecAction && this.RecAction.recursion < recursion) {
-                            this.RecAction.RecList.push({ value: value, recursion: this.RecAction.recursion + 1 })
+                        if (out) {
+                            let outStep = this.stepMap[out]
+                            if (outStep && outStep.RecList) {
+                                let recursion = outStep.recursion ? outStep.recursion : 0
+                                let MaxRec = outStep.MaxRec ? outStep.MaxRec : 0
+                                recursion < MaxRec && outStep.RecList.push({ value: value, recursion: recursion + 1 })
+                            }
                         }
                         return { key: key, value: value }
                     }))
-                    if (step.Isduplicate) {
-                        let hash = crypto.createHash('md5').update(data.map(d => d.value).join()).digest('hex')
-                        this.Judge = !this.hashSet.has(hash)
-                        if (!this.Judge) return resolve()
-                        this.hashSet.add(hash)
-                    }
                     if (step.IsAppend) {
                         data.forEach(d => {
                             let td = this.data.find(t => t.key == d.key)
@@ -396,11 +379,6 @@ class Run extends require('events').EventEmitter {
                     }
                     resolve()
                 }).catch(reject)
-            } break
-            case 'WaitAction': {
-                let LoopTime = step.LoopTime ? step.LoopTime : 1
-                let loop = () => this.isStop || this.runSteps(step.steps).then(setReject).then(ret => ret == 'Break' ? resolve() : this.timeout = setTimeout(() => --LoopTime ? loop() : resolve(), 1000 * (step.WaitSeconds ? step.WaitSeconds : 0))).catch(reject)
-                loop()
             } break
             case 'EditAction': {
                 this.log('xpah:' + [this.XPath, step.XPath].join(''))

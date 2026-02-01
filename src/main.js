@@ -108,7 +108,7 @@ let createWindow = () => {
               partition: id,
               disableDialogs: true,
               contextIsolation: false,
-              preload: appPath + '/src/bundle.js'
+              preload: appPath + '/src/preload.js'
             }
           })
           view.viewMode = true
@@ -394,7 +394,7 @@ ipcMain.on('runTask', (event, task) => {
   })
   let { id, step } = task
   step = JSON.parse(step)
-  let run = tasks[id] = new Run(step, appPath + '/src/bundle.js', id, win)
+  let run = tasks[id] = new Run(step, appPath + '/src/preload.js', id, win)
   run.log = console.log
   run.checkData = async () => {
     return false

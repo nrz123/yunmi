@@ -11,7 +11,7 @@ class EditAction extends React.Component {
     render() {
         return (
             <div style={{ margin: '30px' }}>
-                <Input value='编辑元素' />
+                <Input value={'编辑元素-'+this.props.s.key} />
                 <Collapse defaultActiveKey={['1']}>
                     <Panel header="配置字段" key="1">
                         <Input placeholder="XPath" value={this.state.XPath == undefined ? this.props.s.XPath : this.state.XPath} onChange={e => {

@@ -15,7 +15,7 @@ class ExtractDataAction extends React.Component {
         return (
             <div style={{ margin: '30px' }}>
                 <div style={{ display: this.state.pageIndex == 0 ? '' : 'none' }}>
-                    <Input value='提取数据' />
+                    <Input value={'提取数据-' + this.props.s.key} />
                     <Collapse defaultActiveKey={['1']}>
                         <Panel header="配置字段" key="1">
                             <Table rowClassName="ExtractDataActionRow" locale={{ emptyText: '暂无数据' }} style={{ width: '100%' }} scroll={{ x: 600 }} columns={[
@@ -41,9 +41,9 @@ class ExtractDataAction extends React.Component {
                                     width: 100,
                                 },
                                 {
-                                    title: '递归',
-                                    dataIndex: 'recursion',
-                                    key: 'recursion',
+                                    title: '输出',
+                                    dataIndex: 'out',
+                                    key: 'out',
                                     ellipsis: true,
                                     width: 110,
                                 }
@@ -81,10 +81,10 @@ class ExtractDataAction extends React.Component {
                                             this.setState({})
                                         }} style={{ fontSize: '24px' }} />
                                     </div>,
-                                    recursion: <InputNumber min={0} onChange={value => {
-                                        x.recursion = value
+                                    out: <Input min={0} onChange={e => {
+                                        x.out = e.target.value
                                         this.setState({})
-                                    }} value={x.recursion ? x.recursion : 0}></InputNumber>
+                                    }} value={x.out ? x.out : ''}></Input>
                                 }
                             })} pagination={false}></Table>
                             <Button icon={<PlusOutlined style={{
@@ -101,12 +101,6 @@ class ExtractDataAction extends React.Component {
                             }} checked={this.props.s.IsAppend}>
                                 合并数据
                             </Checkbox><br />
-                            <Checkbox onChange={e => {
-                                this.props.s.Isduplicate = e.target.checked
-                                this.setState({})
-                            }} checked={this.props.s.Isduplicate}>
-                                去除重复
-                            </Checkbox>
                         </Panel>
                     </Collapse>
                 </div>

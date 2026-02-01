@@ -9,7 +9,7 @@ class QuitAction extends React.Component {
     render(){
         return(
             <div style={{margin:'30px'}}>
-                <Input value='结束流程'></Input>
+                <Input value={'结束流程+'+this.props.s.key}></Input>
                 <Collapse defaultActiveKey={['1']}>
                     <Panel header="类型" key="1">
                         <Radio.Group value={this.props.s.Type} onChange={e=>{

@@ -9,7 +9,7 @@ class BranchAction extends React.Component {
     render() {
         return (
             <div style={{ margin: '30px' }}>
-                <Input value='条件判断' />
+                <Input value={'条件判断-' + this.props.s.key} />
                 <Collapse defaultActiveKey={['1']}>
                     <Panel header="成立条件" key="1">
                         <Checkbox checked={this.props.s.Else} onChange={e => {
