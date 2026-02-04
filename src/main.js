@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BaseWindow, Menu, session, ipcMain, dialog, BrowserView, net, shell } = require('electron')
+const { app, BrowserWindow, Menu, session, ipcMain, dialog, net, shell, WebContentsView } = require('electron')
 const Excel = require('exceljs')
 const fs = require('fs')
 const crypto = require('crypto')
@@ -10,7 +10,7 @@ app.commandLine.appendSwitch('ignore-certificate-errors')
 app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors')
 app.commandLine.appendSwitch('disable-features', 'UserAgentClientHint')
 let isDev = !app.isPackaged
-isDev || Menu.setApplicationMenu(null)
+Menu.setApplicationMenu(null)
 let password = ''
 let protocal = 'http://'
 let serverHost = '127.0.0.1:80'
@@ -68,12 +68,21 @@ let createWindow = () => {
     }
   })
   let viewMap = {}
+  win.on('resize', () => {
+    const bounds = win.getBounds()
+    win.contentView.children.forEach(view => {
+      view.setBounds({
+        ...view.getBounds(),
+        height: bounds.height - 152
+      })
+    })
+  })
   ipcMain.handle('viewManage', (event, id, type, ...args) => {
     let view = viewMap[id]
     if (!view || view.webContents.isDestroyed()) {
       switch (type) {
         case 'viewModel': {
-          view = viewMap[id] = new BrowserView({
+          view = viewMap[id] = new WebContentsView({
             webPreferences: {
               webSecurity: false,
               backgroundThrottling: false,
@@ -96,10 +105,9 @@ let createWindow = () => {
             view.webContents.loadURL(url, loadOptions)
             return { action: 'deny' }
           })
-          view.setAutoResize({ height: true })
         } break
         case 'viewShow': {
-          view = viewMap[id] = new BrowserView({
+          view = viewMap[id] = new WebContentsView({
             webPreferences: {
               webSecurity: false,
               backgroundThrottling: false,
@@ -141,7 +149,6 @@ let createWindow = () => {
           })
           view.webContents.on('did-finish-load', e => view.viewMode && view.webContents.executeJavaScript('window.runApi.SetListener()'))
           view.webContents.on('did-frame-finish-load', e => view.viewMode && view.webContents.executeJavaScript('window.runApi.SetListener()'))
-          view.setAutoResize({ height: true })
         } break
         default: return
       }
@@ -149,16 +156,16 @@ let createWindow = () => {
     switch (type) {
       case 'viewModel':
       case 'viewShow': {
-        win.setBrowserView(view)
+        win.contentView.addChildView(view)
       } break
       case 'viewResize': {
         view.setBounds({ ...view.getBounds(), ...args[0] })
       } break
       case 'viewHide': {
-        win.removeBrowserView(view)
+        win.contentView.removeChildView(view)
       } break
       case 'viewRemove': {
-        win.removeBrowserView(view)
+        win.contentView.removeChildView(view)
         view.webContents.destroy()
         delete viewMap[id]
       } break
@@ -387,7 +394,7 @@ ipcMain.on('video', (event, fid, uid, mimeType, buffer) => {
 })
 let tasks = {}
 ipcMain.on('runTask', (event, task) => {
-  let win = new BaseWindow({
+  let win = new BrowserWindow({
     width: 1200,
     height: 800,
     resizable: false
