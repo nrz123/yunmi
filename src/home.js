@@ -167,7 +167,7 @@ class Home extends React.Component {
                                 fontSize: '18px',
                                 fontWeight: '300'
                             }} icon={<QuestionCircleOutlined style={{ fontSize: '24px', color: '#08c' }} />} onClick={() => {
-                                ipcRenderer.send('external', 'https://github.com/nrz123/spider')
+                                ipcRenderer.send('external', 'https://github.com/nrz123/yunmi')
                             }}>
                                 使用教程
                             </Menu.Item>
