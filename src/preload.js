@@ -1,5 +1,4 @@
 const { ipcRenderer } = require('electron')
-const html2canvas = () => { }
 const getNodes = xpath => {
     let result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null)
     let arr = []
@@ -276,8 +275,7 @@ window.runApi = {
                                 canvas.getContext('2d').drawImage(node, 0, 0)
                                 value = canvas.toDataURL()
                             } else {
-                                let canvas = await html2canvas(node)
-                                value = canvas.toDataURL()
+                                value = ''
                             }
                         } break
                         case 'VIDEO': {
@@ -320,8 +318,7 @@ window.runApi = {
                                     }
                                 }
                             } else {
-                                let canvas = await html2canvas(node)
-                                value = canvas.toDataURL()
+                                value = ''
                             }
                         } break
                         case 'Html': value = node.outerHTML; break

@@ -14,7 +14,8 @@ Menu.setApplicationMenu(null)
 let password = ''
 let protocal = 'http://'
 let serverHost = '127.0.0.1:80'
-let set = {}
+let single = false
+let downloaddir = 'download'
 let appPath = app.getAppPath()
 let login = () => net.fetch(protocal + serverHost + '/users/login', {
   method: "POST",
@@ -25,11 +26,11 @@ let login = () => net.fetch(protocal + serverHost + '/users/login', {
     password: password
   })
 }).then(res => res.json())
+ipcMain.on('downloaddir', event => event.returnValue = appPath + '/' + downloaddir)
 ipcMain.on('protocal', event => event.returnValue = protocal)
 ipcMain.on('serverHost', event => event.returnValue = serverHost)
 ipcMain.on('password', event => event.returnValue = password)
-ipcMain.on('defaultCloud', event => event.returnValue = defaultCloud)
-ipcMain.on('set', event => event.returnValue = set)
+ipcMain.on('single', event => event.returnValue = single)
 ipcMain.on('setCookie', (event, cookie) => session.defaultSession.cookies.set(cookie))
 ipcMain.on('openWeb', (event, path) => new BrowserWindow({
   width: 800,
@@ -44,8 +45,6 @@ ipcMain.on('openWeb', (event, path) => new BrowserWindow({
 }).webContents.loadURL(path))
 ipcMain.on('quit', event => app.quit())
 ipcMain.on('external', (event, url) => shell.openExternal(url))
-let downloaddir = 'yunmidownload'
-ipcMain.on('downloaddir', event => event.returnValue = downloaddir)
 ipcMain.handle('fetch', (event, url, options) => net.fetch(url, options).then(res => res.json()))
 let init = async () => {
   let cookies = await session.defaultSession.cookies.get({ url: "http://127.0.0.1:52126" })
@@ -254,6 +253,10 @@ let start = async () => {
         console.log('登录失败')
         win.webContents.send('message', '登录失败')
       })
+    } else if (channel == 'single') {
+      single = true
+      createWindow()
+      win.destroy()
     }
   })
   win.webContents.loadURL(isDev ? 'http://127.0.0.1:3000/#login' : 'file:///' + appPath + '/build/index.html#login')
@@ -415,8 +418,8 @@ ipcMain.on('runTask', (event, task) => {
         value = value.substring(22)
         value = Buffer.from(value, 'base64')
         let fname = crypto.createHash('md5').update(value).digest('hex')
-        d.value = downloaddir + "/" + fname + '.png'
-        fs.writeFile(d.value, value, e => { })
+        d.value = fname + '.png'
+        fs.writeFile(downloaddir + "/" + d.value, value, e => { })
       }
     })
     event.sender.send('saveData', id, data)

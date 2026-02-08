@@ -110,7 +110,7 @@ class Cloud extends React.Component {
                             fontSize: '18px',
                             fontWeight: '300'
                         }} onClick={() => {
-                            this.props.addPane(<CloudDataShow ref={ref} tabKey={task.id + '-cloudData'} tab={'集群数据'} taskId={task.id}></CloudDataShow>)
+                            this.props.addPane(<CloudDataShow ref={ref} tabKey={task.id + '-cloudData'} tab={'集群数据'} taskId={task.id} taskName={task.name}></CloudDataShow>)
                         }}>集群数据</a>, opera: <div>
                             <PlusCircleOutlined style={{ fontSize: '24px', color: '#08c' }} onClick={() => {
                                 runCloud(task.id)

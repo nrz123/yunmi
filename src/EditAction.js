@@ -1,7 +1,6 @@
 import React from 'react'
-import { Collapse, Input, Checkbox, Button, Table, InputNumber, Select } from 'antd'
+import { Collapse, Input, Button, Table } from 'antd'
 import { DeleteOutlined, PlusOutlined, UpOutlined, DownOutlined } from '@ant-design/icons'
-const { Option } = Select
 const { Panel } = Collapse
 class EditAction extends React.Component {
     constructor(props) {
@@ -11,7 +10,7 @@ class EditAction extends React.Component {
     render() {
         return (
             <div style={{ margin: '30px' }}>
-                <Input value={'编辑元素-'+this.props.s.key} />
+                <Input value={'编辑元素-' + this.props.s.key} />
                 <Collapse defaultActiveKey={['1']}>
                     <Panel header="配置字段" key="1">
                         <Input placeholder="XPath" value={this.state.XPath == undefined ? this.props.s.XPath : this.state.XPath} onChange={e => {

@@ -27,8 +27,11 @@ class Home extends React.Component {
         }
     }
     componentDidMount() {
-        global.serverHost = ipcRenderer.sendSync('protocal') + ipcRenderer.sendSync('serverHost')
-        global.set = ipcRenderer.sendSync('set')
+        let protocal = ipcRenderer.sendSync('protocal')
+        let serverHost = ipcRenderer.sendSync('serverHost')
+        global.serverHost = protocal + serverHost
+        global.downloaddir = ipcRenderer.sendSync('downloaddir')
+        global.single = ipcRenderer.sendSync('single')
         global.upcloudState = () => { }
         global.upmodelState = () => { }
         global.runState = {}
@@ -38,9 +41,8 @@ class Home extends React.Component {
             tabPane.tab = title
             this.setState({})
         }
-        let list = global.serverHost.split('://')
         let connect = () => {
-            global.ws = new WebSocket((list[0] == 'https' ? 'wss://' : 'ws://') + list[1] + "/users/ws")
+            global.ws = new WebSocket((protocal == 'https://' ? 'wss://' : 'ws://') + serverHost + "/users/ws")
             global.ws.onmessage = event => {
                 let mess = JSON.parse(event.data)
                 console.log(mess)
@@ -58,7 +60,7 @@ class Home extends React.Component {
             }
             global.ws.onclose = connect
         }
-        connect()
+        global.single || connect()
     }
     addPane = pane => {
         let key = pane.props.tabKey ? pane.props.tabKey : guid()
@@ -112,7 +114,7 @@ class Home extends React.Component {
                                 fontSize: '18px',
                                 fontWeight: '300'
                             }} icon={<RetweetOutlined style={{ fontSize: '24px', color: '#08c' }} />} onClick={() => {
-                                this.addPane(<Cloud ref={ref} tabKey={'cloud'} tab={'集群采集'} addPane={this.addPane}></Cloud>)
+                                global.single ? message.info('单机模式不支持该功能') : this.addPane(<Cloud ref={ref} tabKey={'cloud'} tab={'集群采集'} addPane={this.addPane}></Cloud>)
                             }}>
                                 集群采集
                             </Menu.Item>
@@ -123,7 +125,7 @@ class Home extends React.Component {
                                 fontSize: '18px',
                                 fontWeight: '300'
                             }} icon={<ApartmentOutlined style={{ fontSize: '24px', color: '#08c' }} />} onClick={() => {
-                                this.addPane(<Manage ref={ref} tabKey={'manage'} tab={'集群管理'} addPane={this.addPane}></Manage>)
+                                global.single ? message.info('单机模式不支持该功能') : this.addPane(<Manage ref={ref} tabKey={'manage'} tab={'集群管理'} addPane={this.addPane}></Manage>)
                             }}>
                                 集群管理
                             </Menu.Item>
@@ -134,7 +136,7 @@ class Home extends React.Component {
                                 fontSize: '18px',
                                 fontWeight: '300'
                             }} icon={<CloudUploadOutlined style={{ fontSize: '24px', color: '#08c' }} />} onClick={() => {
-                                this.addPane(<WebList ref={ref} tabKey={'webList'} tab={'数据发布'} addPane={this.addPane}></WebList>)
+                                global.single ? message.info('单机模式不支持该功能') : this.addPane(<WebList ref={ref} tabKey={'webList'} tab={'数据发布'} addPane={this.addPane}></WebList>)
                             }}>
                                 数据发布
                             </Menu.Item>
@@ -145,7 +147,7 @@ class Home extends React.Component {
                                 fontSize: '18px',
                                 fontWeight: '300'
                             }} icon={<ZoomInOutlined style={{ fontSize: '24px', color: '#08c' }} />} onClick={() => {
-                                this.addPane(<DataAnalysis ref={ref} tabKey={'dataAnalysis'} tab={'数据分析'} addPane={this.addPane}></DataAnalysis>)
+                                global.single ? message.info('单机模式不支持该功能') : this.addPane(<DataAnalysis ref={ref} tabKey={'dataAnalysis'} tab={'数据分析'} addPane={this.addPane}></DataAnalysis>)
                             }}>
                                 数据分析
                             </Menu.Item>
@@ -156,7 +158,7 @@ class Home extends React.Component {
                                 fontSize: '18px',
                                 fontWeight: '300'
                             }} icon={<ShareAltOutlined style={{ fontSize: '24px', color: '#08c' }} />} onClick={() => {
-                                this.addPane(<DataSelect ref={ref} tabKey={'dataSelect'} tab={'智能索引'} addPane={this.addPane}></DataSelect>)
+                                global.single ? message.info('单机模式不支持该功能') : this.addPane(<DataSelect ref={ref} tabKey={'dataSelect'} tab={'智能索引'} addPane={this.addPane}></DataSelect>)
                             }}>
                                 智能索引
                             </Menu.Item>

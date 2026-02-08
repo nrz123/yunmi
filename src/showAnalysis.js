@@ -1,6 +1,6 @@
 import './showAnalysis.css'
 import React from 'react'
-import { Button, Pagination } from 'antd'
+import { Pagination } from 'antd'
 import * as go from 'gojs'
 import { ReactDiagram } from 'gojs-react'
 const { ipcRenderer } = window.require('electron')

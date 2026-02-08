@@ -87,7 +87,7 @@ class Manage extends React.Component {
                         }}>
                             {task.cloudState ? '正在运行' : '等待运行'}
                         </div>, showData: <a onClick={() => {
-                            this.props.addPane(<CloudDataShow ref={ref} tabKey={task.id + '-cloudData'} tab={'集群数据'} taskId={task.id}></CloudDataShow>)
+                            this.props.addPane(<CloudDataShow ref={ref} tabKey={task.id + '-cloudData'} tab={'集群数据'} taskId={task.id} taskName={task.name}></CloudDataShow>)
                         }} style={{
                             fontSize: '18px',
                             fontWeight: '300'

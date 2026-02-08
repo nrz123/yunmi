@@ -1,7 +1,7 @@
 import React from 'react'
 import './home.css'
 import { Table, Button } from 'antd'
-import { PlusOutlined, ZoomInOutlined, PlayCircleOutlined, PauseCircleOutlined, VerticalAlignBottomOutlined, DeleteOutlined } from '@ant-design/icons'
+import { PlusOutlined, ZoomInOutlined, VerticalAlignBottomOutlined, DeleteOutlined } from '@ant-design/icons'
 import { modelList, modelSum, deleteModel, loadModel } from './model.js'
 import guid from './uuid'
 import CreateAnalysis from './createAnalysis.js'

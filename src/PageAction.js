@@ -1,5 +1,5 @@
 import React from 'react'
-import { Collapse, Checkbox, Radio, Input } from 'antd'
+import { Collapse, Radio, Input } from 'antd'
 const { Panel } = Collapse
 class PageAction extends React.Component {
     constructor(props) {

@@ -1,8 +1,10 @@
 import { message } from 'antd'
+import { saveData, loadData, dataSum, getData, deleteData } from './data.js'
 const { ipcRenderer } = window.require('electron')
 export function taskList(offset, rows) {
-    console.log(global.serverHost)
-    return ipcRenderer.invoke('fetch', global.serverHost + "/users/taskList", {
+    return global.single ? loadData('tasks', offset, rows).catch(e => {
+        message.info("网络错误")
+    }) : ipcRenderer.invoke('fetch', global.serverHost + "/users/taskList", {
         method: "POST",
         headers: {
             'Content-Type': 'application/json'
@@ -14,6 +16,68 @@ export function taskList(offset, rows) {
     }).catch(e => {
         message.info("网络错误")
     })
+}
+export function taskSum() {
+    return global.single ? dataSum('tasks').catch(e => {
+        message.info("网络错误")
+    }) : ipcRenderer.invoke('fetch', global.serverHost + "/users/taskSum", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: ''
+    }).catch(e => {
+        message.info("网络错误")
+    })
+}
+export function loadTask(id) {
+    return global.single ? getData('tasks', id).catch(e => {
+        message.info("网络错误")
+    }) : ipcRenderer.invoke('fetch', global.serverHost + "/users/loadTask", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            id: id
+        })
+    }).catch(e => {
+        message.info("网络错误")
+    })
+}
+export function saveTask(task) {
+    return global.single ? saveData('tasks', task).then(data => {
+        message.info(data)
+        return data
+    }) : ipcRenderer.invoke('fetch', global.serverHost + "/users/saveTask", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            task: task
+        })
+    }).then(data => {
+        message.info(data)
+        return data
+    }).catch(e => message.info("网络错误"))
+}
+export function deleteTask(id) {
+    return global.single ? deleteData('tasks', id).then(data => {
+        message.info(data)
+        return data
+    }).catch(e => message.info("网络错误")) : ipcRenderer.invoke('fetch', global.serverHost + "/users/deleteTask", {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            id: id
+        })
+    }).then(data => {
+        message.info(data)
+        return data
+    }).catch(e => message.info("网络错误"))
 }
 export function pageList(offset, rows) {
     return ipcRenderer.invoke('fetch', global.serverHost + "/resource/pageList", {
@@ -29,17 +93,6 @@ export function pageList(offset, rows) {
         message.info("网络错误")
     })
 }
-export function taskSum() {
-    return ipcRenderer.invoke('fetch', global.serverHost + "/users/taskSum", {
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: ''
-    }).catch(e => {
-        message.info("网络错误")
-    })
-}
 export function pageSum() {
     return ipcRenderer.invoke('fetch', global.serverHost + "/resource/pageSum", {
         method: "POST",
@@ -47,19 +100,6 @@ export function pageSum() {
             'Content-Type': 'application/json'
         },
         body: ''
-    }).catch(e => {
-        message.info("网络错误")
-    })
-}
-export function loadTask(id) {
-    return ipcRenderer.invoke('fetch', global.serverHost + "/users/loadTask", {
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            id: id
-        })
     }).catch(e => {
         message.info("网络错误")
     })
@@ -77,20 +117,6 @@ export function loadPage(id) {
         message.info("网络错误")
     })
 }
-export function saveTask(task) {
-    return ipcRenderer.invoke('fetch', global.serverHost + "/users/saveTask", {
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            task: task
-        })
-    }).then(data => {
-        message.info(data)
-        return data
-    }).catch(e => message.info("网络错误"))
-}
 export function savePage(page) {
     return ipcRenderer.invoke('fetch', global.serverHost + "/users/savePage", {
         method: "POST",
@@ -99,20 +125,6 @@ export function savePage(page) {
         },
         body: JSON.stringify({
             page: page
-        })
-    }).then(data => {
-        message.info(data)
-        return data
-    }).catch(e => message.info("网络错误"))
-}
-export function deleteTask(id) {
-    return ipcRenderer.invoke('fetch', global.serverHost + "/users/deleteTask", {
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            id: id
         })
     }).then(data => {
         message.info(data)

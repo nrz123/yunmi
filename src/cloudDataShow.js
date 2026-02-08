@@ -91,7 +91,7 @@ class CloudDataShow extends React.Component {
                                 fontSize: '18px',
                                 fontWeight: '300',
                                 cursor: 'pointer'
-                            }} onClick={() => ipcRenderer.send('openWeb', v)}>{v}</p>)}
+                            }} onClick={() => ipcRenderer.send('openWeb', global.serverHost + '/' + v)}>{v}</p>)}
                         </div>
                     })
                     return ret
@@ -161,6 +161,7 @@ class CloudDataShow extends React.Component {
                     &nbsp;&nbsp;&nbsp;&nbsp;
                     <VerticalAlignBottomOutlined onClick={() => {
                         ipcRenderer.invoke('export', {
+                            defaultPath: this.props.taskName,
                             filters: [
                                 { name: 'Excel', extensions: ['xlsx'] }
                             ]

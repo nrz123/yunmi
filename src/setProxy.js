@@ -1,6 +1,5 @@
 import React from 'react'
-import { Checkbox, Input, Modal } from 'antd'
-const { TextArea } = Input
+import { Input, Modal } from 'antd'
 class setProxy extends React.Component {
     constructor(props) {
         super(props)
@@ -8,7 +7,7 @@ class setProxy extends React.Component {
     }
     componentWillReceiveProps(nextProps) {
         if (nextProps.visible) {
-            this.setState({ proxy: nextProps.step.proxy, userAgent: nextProps.step.userAgent})
+            this.setState({ proxy: nextProps.step.proxy, userAgent: nextProps.step.userAgent })
         }
     }
     render() {

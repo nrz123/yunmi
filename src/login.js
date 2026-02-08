@@ -43,12 +43,17 @@ class Login extends React.Component {
                     </Form.Item>
                     <Form.Item>
                         <Button style={{ width: '100%' }} type="primary" htmlType="submit">
-                            确定
+                            登录
+                        </Button>
+                    </Form.Item>
+                    <Form.Item>
+                        <Button style={{ width: '100%' }} onClick={() => ipcRenderer.send('single')}>
+                            单机
                         </Button>
                     </Form.Item>
                     <Form.Item>
                         <Button style={{ width: '100%' }} onClick={() => ipcRenderer.send('quit', '程序退出')}>
-                            取消
+                            退出
                         </Button>
                     </Form.Item>
                 </Form>

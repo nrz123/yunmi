@@ -137,7 +137,7 @@ class TaskPage extends React.Component {
                             fontSize: '18px',
                             fontWeight: '300'
                         }} onClick={() => {
-                            this.props.addPane(<DataShow ref={ref} tabKey={task.id + '-data'} tab={'查看数据'} taskId={task.id}></DataShow>)
+                            this.props.addPane(<DataShow ref={ref} tabKey={task.id + '-data'} tab={'查看数据'} taskId={task.id} taskName={task.name}></DataShow>)
                         }}>本地数据</a>, time: <div style={{
                             fontSize: '18px',
                             fontWeight: '300'
