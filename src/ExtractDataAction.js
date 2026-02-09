@@ -1,5 +1,5 @@
 import React from 'react'
-import { Collapse, Input, Checkbox, Button, Table, Radio, InputNumber, Popover } from 'antd'
+import { Collapse, Input, Checkbox, Button, Table, Radio, Popover } from 'antd'
 import { EditOutlined, DeleteOutlined, UpOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons'
 import guid from './uuid.js'
 const { Panel } = Collapse

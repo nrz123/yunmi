@@ -128,7 +128,7 @@ class FlowData {
                             inLinks.value.toNode = outLinks.value.toNode
                             outLinks.value.toNode = thisObj.toNode
                         } else {
-                            let nodeName = node.key
+                            let nodeName = node.data.type
                             step = { nodeName: nodeName, key: guid(), List: [] }
                             if (nodeName == 'LoopAction' || nodeName == 'BranchAction' || nodeName == 'NavigateAction' || nodeName == 'CookieAction' || nodeName == 'EnterTextAction' || nodeName == 'WaitAction') {
                                 step.steps = []

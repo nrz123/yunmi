@@ -1,5 +1,5 @@
 import React from 'react'
-import { Table, message, Button } from 'antd'
+import { Table } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
 import CloudDataShow from './cloudDataShow.js'
 import Browser from './browser.js'

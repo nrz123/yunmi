@@ -1,6 +1,6 @@
 import React from 'react'
 import './home.css'
-import { Button, Row, Col, Card, Avatar, Input, Form, message, Modal, Collapse } from 'antd'
+import { Button, Row, Col, Card, Avatar, Input, message, Modal, Collapse } from 'antd'
 import { WeiboSquareOutlined, PlusOutlined } from '@ant-design/icons'
 import VSplit from './vsplit'
 const { Panel } = Collapse
