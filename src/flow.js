@@ -47,4 +47,4 @@ class Flow extends React.Component {
         )
     }
 }
-export default Flow
+export default React.memo(Flow)
