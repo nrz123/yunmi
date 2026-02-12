@@ -3,6 +3,9 @@ const Excel = require('exceljs')
 const fs = require('fs')
 const crypto = require('crypto')
 const { Run } = require('./run.js')
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg')
+const ffmpeg = require('fluent-ffmpeg')
+ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 if (!app.requestSingleInstanceLock()) app.quit()
 app.commandLine.appendSwitch('disable-site-isolation-trials')
 app.commandLine.appendSwitch("disable-web-security")
@@ -340,20 +343,17 @@ let vend = (webContents, fid) => {
   if (fmap) {
     let umap = fmap[fid]
     if (umap) {
-      let filenames = [], codecs = []
+      let f = ffmpeg()
       for (let uid in umap) {
         if (umap[uid]) {
           umap[uid].stream.end()
-          let index = umap[uid].mimeType.indexOf('codecs=')
-          index > -1 && codecs.push(umap[uid].mimeType.slice(index + 7).replace(new RegExp('"', 'g'), ''))
-          filenames.push(umap[uid].filename)
+          f = f.input(downloaddir + '/' + fid + '/' + umap[uid].filename + '.mp4')
         }
       }
-      filenames.forEach(filename => {
-        fs.writeFile(downloaddir + '/' + fid + '/' + filename + 'v.m3u8', '#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\n' + filename + '.mp4\n#EXT-X-ENDLIST', e => {
-          fs.writeFile(downloaddir + '/' + fid + '/' + filename + '.m3u8', '#EXTM3U\n#EXT-X-STREAM-INF:CODECS="' + codecs.join() + '"\n' + filename + 'v.m3u8', e => {
-          })
-        })
+      f.outputOptions(['-c copy']).save(downloaddir + '/' + fid + '/0.mp4').on('end', () => {
+        console.log('Merge done:')
+      }).on('error', (err) => {
+        console.error('ffmpeg merge error:')
       })
       delete fmap[fid]
     }
@@ -376,8 +376,8 @@ ipcMain.on('video', (event, fid, uid, mimeType, buffer) => {
         for (let fid in fmap) {
           vend(webContents, fid)
         }
+        delete videoMap[webContents]
       }
-      delete videoMap[webContents]
     })
   }
   let fmap = videoMap[webContents]
@@ -388,7 +388,10 @@ ipcMain.on('video', (event, fid, uid, mimeType, buffer) => {
   if (!umap[uid]) {
     fs.existsSync(downloaddir) || fs.mkdirSync(downloaddir)
     fs.existsSync(downloaddir + '/' + fid) || fs.mkdirSync(downloaddir + '/' + fid)
-    let filename = 'video' + Object.keys(umap).length
+    const kind = mimeType.includes("audio") ? "audio" : mimeType.includes("video") ? "video" : "unknown"
+    let filename = kind + Object.keys(umap).filter(key => {
+      return umap[key].filename.includes(kind)
+    }).length
     umap[uid] = { stream: fs.createWriteStream(downloaddir + '/' + fid + '/' + filename + '.mp4'), mimeType: mimeType, filename: filename }
   }
   let fBuffer = Buffer.from(buffer)

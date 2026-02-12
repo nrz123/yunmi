@@ -215,6 +215,14 @@ URL.createObjectURL = function (obj) {
             }
             return sb
         }
+        let isTypeSupported = obj.isTypeSupported
+        obj.isTypeSupported = function (mimeType) {
+            if (mimeType.includes("mp4a.40.5")) {
+                console.warn("Blocking HE-AAC, forcing fallback to AAC-LC");
+                return false
+            }
+            return isTypeSupported.apply(this, arguments)
+        }
     }
     return url
 }
@@ -297,7 +305,7 @@ window.runApi = {
                                 }
                                 if (reqType != 'preview') {
                                     if (value.startsWith('blob:')) {
-                                        let fid = value = uMap[value]
+                                        value = uMap[value]
                                         if (value) {
                                             let time = 0
                                             let interval = setInterval(() => {
@@ -312,8 +320,9 @@ window.runApi = {
                                             await new Promise(resolve => {
                                                 node.addEventListener('ended', resolve, false)
                                             })
-                                            ipcRenderer.send('videoend', fid)
+                                            ipcRenderer.send('videoend', value)
                                             clearInterval(interval)
+                                            value = value + '/0.mp4'
                                         }
                                     }
                                 }
