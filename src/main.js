@@ -1,18 +1,18 @@
 const { app, BrowserWindow, Menu, session, ipcMain, dialog, net, shell, WebContentsView } = require('electron')
+const path = require('path');
 const Excel = require('exceljs')
 const fs = require('fs')
 const crypto = require('crypto')
 const { Run } = require('./run.js')
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg')
 const ffmpeg = require('fluent-ffmpeg')
-ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+ffmpeg.setFfmpegPath(app.isPackaged ? ffmpegInstaller.path.replace('app.asar', 'app.asar.unpacked') : ffmpegInstaller.path)
 if (!app.requestSingleInstanceLock()) app.quit()
 app.commandLine.appendSwitch('disable-site-isolation-trials')
 app.commandLine.appendSwitch("disable-web-security")
 app.commandLine.appendSwitch('ignore-certificate-errors')
 app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors')
 app.commandLine.appendSwitch('disable-features', 'UserAgentClientHint')
-let isDev = !app.isPackaged
 Menu.setApplicationMenu(null)
 let password = ''
 let protocal = 'http://'
@@ -29,7 +29,7 @@ let login = () => net.fetch(protocal + serverHost + '/users/login', {
     password: password
   })
 }).then(res => res.json())
-ipcMain.on('downloaddir', event => event.returnValue = appPath + '/' + downloaddir)
+ipcMain.on('downloaddir', event => event.returnValue = path.dirname(app.getPath('exe')) + '/' + downloaddir)
 ipcMain.on('protocal', event => event.returnValue = protocal)
 ipcMain.on('serverHost', event => event.returnValue = serverHost)
 ipcMain.on('password', event => event.returnValue = password)
@@ -216,7 +216,7 @@ let createWindow = () => {
     })
     callback({ requestHeaders: details.requestHeaders })
   })
-  win.webContents.loadURL(isDev ? 'http://127.0.0.1:3000/' : 'file:///' + appPath + '/build/index.html')
+  win.webContents.loadURL(app.isPackaged ? 'file:///' + appPath + '/build/index.html' : 'http://127.0.0.1:3000/')
   win.on('closed', () => app.quit())
   app.on('second-instance', (event, commandLine, workingDirectory) => win.focus())
 }
@@ -262,7 +262,7 @@ let start = async () => {
       win.destroy()
     }
   })
-  win.webContents.loadURL(isDev ? 'http://127.0.0.1:3000/#login' : 'file:///' + appPath + '/build/index.html#login')
+  win.webContents.loadURL(app.isPackaged ? 'file:///' + appPath + '/build/index.html#login' : 'http://127.0.0.1:3000/#login')
 }
 app.whenReady().then(start)
 app.on('window-all-closed', () => {

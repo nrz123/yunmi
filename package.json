@@ -61,6 +61,10 @@
     "productName": "云觅采集器",
     "extends": null,
     "appId": "com.yunmi.client",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/@ffmpeg-installer/**"
+    ],
     "directories": {
       "buildResources": "build",
       "output": "dist"
