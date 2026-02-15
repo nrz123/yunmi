@@ -32,7 +32,7 @@ let login = () => net.fetch(protocal + serverHost + '/users/login', {
     password: password
   })
 }).then(res => res.json())
-ipcMain.on('downloaddir', event => event.returnValue = app.isPackaged ? path.dirname(app.getPath('exe')) : appPath + '/' + downloaddir)
+ipcMain.on('downloaddir', event => event.returnValue = (app.isPackaged ? path.dirname(app.getPath('exe')) : appPath) + '/' + downloaddir)
 ipcMain.on('protocal', event => event.returnValue = protocal)
 ipcMain.on('serverHost', event => event.returnValue = serverHost)
 ipcMain.on('password', event => event.returnValue = password)
