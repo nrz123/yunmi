@@ -6,13 +6,16 @@ const crypto = require('crypto')
 const { Run } = require('./run.js')
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg')
 const ffmpeg = require('fluent-ffmpeg')
-ffmpeg.setFfmpegPath(app.isPackaged ? ffmpegInstaller.path.replace('app.asar', 'app.asar.unpacked') : ffmpegInstaller.path)
+ffmpeg.setFfmpegPath(ffmpegInstaller.path.replace('app.asar', 'app.asar.unpacked'))
 if (!app.requestSingleInstanceLock()) app.quit()
 app.commandLine.appendSwitch('disable-site-isolation-trials')
 app.commandLine.appendSwitch("disable-web-security")
 app.commandLine.appendSwitch('ignore-certificate-errors')
 app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors')
 app.commandLine.appendSwitch('disable-features', 'UserAgentClientHint')
+app.commandLine.appendSwitch('disable-blink-features', 'AutomationControlled')
+app.commandLine.appendSwitch('enable-gpu-rasterization')
+app.commandLine.appendSwitch('ignore-gpu-blocklist')
 Menu.setApplicationMenu(null)
 let password = ''
 let protocal = 'http://'
@@ -29,7 +32,7 @@ let login = () => net.fetch(protocal + serverHost + '/users/login', {
     password: password
   })
 }).then(res => res.json())
-ipcMain.on('downloaddir', event => event.returnValue = path.dirname(app.getPath('exe')) + '/' + downloaddir)
+ipcMain.on('downloaddir', event => event.returnValue = app.isPackaged ? path.dirname(app.getPath('exe')) : appPath + '/' + downloaddir)
 ipcMain.on('protocal', event => event.returnValue = protocal)
 ipcMain.on('serverHost', event => event.returnValue = serverHost)
 ipcMain.on('password', event => event.returnValue = password)
@@ -83,31 +86,6 @@ let createWindow = () => {
     let view = viewMap[id]
     if (!view || view.webContents.isDestroyed()) {
       switch (type) {
-        case 'viewModel': {
-          view = viewMap[id] = new WebContentsView({
-            webPreferences: {
-              webSecurity: false,
-              backgroundThrottling: false,
-              sandbox: true,
-              plugins: true,
-              partition: id,
-              contextIsolation: false
-            }
-          })
-          view.webContents.setWindowOpenHandler(detail => {
-            let { url, postBody, referrer } = detail
-            let loadOptions = {
-              httpReferrer: referrer
-            }
-            if (postBody != null) {
-              const { data, contentType, boundary } = postBody
-              loadOptions.postData = data
-              loadOptions.extraHeaders = `content-type: ${contentType}; boundary=${boundary}`
-            }
-            view.webContents.loadURL(url, loadOptions)
-            return { action: 'deny' }
-          })
-        } break
         case 'viewShow': {
           view = viewMap[id] = new WebContentsView({
             webPreferences: {
@@ -123,6 +101,9 @@ let createWindow = () => {
           })
           view.viewMode = true
           webContentsSet.add(view.webContents)
+          view.webContents.setUserAgent(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+          )
           view.webContents.on('destroyed', () => {
             webContentsSet.delete(view.webContents)
           })
@@ -147,6 +128,8 @@ let createWindow = () => {
           })
           view.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
             if (view.webContents) details.requestHeaders['User-Agent'] = view.webContents.getUserAgent()
+            details.requestHeaders['Sec-CH-UA'] = '"Google Chrome";v="137", "Chromium";v="137"'
+            details.requestHeaders['Sec-CH-UA-Platform'] = '"Windows"'
             callback({ requestHeaders: details.requestHeaders })
           })
           view.webContents.on('did-finish-load', e => view.viewMode && view.webContents.executeJavaScript('window.runApi.SetListener()'))
@@ -156,7 +139,6 @@ let createWindow = () => {
       }
     }
     switch (type) {
-      case 'viewModel':
       case 'viewShow': {
         win.contentView.addChildView(view)
       } break

@@ -1,6 +1,7 @@
 import React from 'react'
-import { Collapse, Input, Checkbox, Button, Table, InputNumber, Select } from 'antd'
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { Collapse, Input, Checkbox, Button, Table, InputNumber, Select, message } from 'antd'
+import { DeleteOutlined, PlusOutlined, VerticalAlignTopOutlined, VerticalAlignBottomOutlined } from '@ant-design/icons'
+const { ipcRenderer } = window.require('electron')
 const { Option } = Select
 const { Panel } = Collapse
 class CookieAction extends React.Component {
@@ -64,9 +65,16 @@ class CookieAction extends React.Component {
                                         width: 200,
                                     },
                                     {
-                                        title: 'secure',
-                                        dataIndex: 'secure',
-                                        key: 'secure',
+                                        title: 'expirationDate',
+                                        dataIndex: 'expirationDate',
+                                        key: 'expirationDate',
+                                        ellipsis: true,
+                                        width: 200,
+                                    },
+                                    {
+                                        title: 'hostOnly',
+                                        dataIndex: 'hostOnly',
+                                        key: 'hostOnly',
                                         ellipsis: true,
                                         width: 90,
                                     },
@@ -78,16 +86,23 @@ class CookieAction extends React.Component {
                                         width: 90,
                                     },
                                     {
-                                        title: 'expirationDate',
-                                        dataIndex: 'expirationDate',
-                                        key: 'expirationDate',
+                                        title: 'secure',
+                                        dataIndex: 'secure',
+                                        key: 'secure',
                                         ellipsis: true,
-                                        width: 200,
+                                        width: 90,
                                     },
                                     {
                                         title: 'sameSite',
                                         dataIndex: 'sameSite',
                                         key: 'sameSite',
+                                        ellipsis: true,
+                                        width: 200,
+                                    },
+                                    {
+                                        title: 'session',
+                                        dataIndex: 'session',
+                                        key: 'session',
                                         ellipsis: true,
                                         width: 200,
                                     },
@@ -120,18 +135,26 @@ class CookieAction extends React.Component {
                                             x.path = e.target.value
                                             this.setState({})
                                         }}></Input>,
-                                        secure: <Checkbox checked={x.secure} onChange={e => {
-                                            x.secure = e.target.checked
+                                        expirationDate: <InputNumber style={{ width: '100%' }} min={0} value={x.expirationDate} onChange={value => {
+                                            x.expirationDate = value
+                                            this.setState({})
+                                        }}></InputNumber>,
+                                        hostOnly: <Checkbox checked={x.hostOnly} onChange={e => {
+                                            x.hostOnly = e.target.checked
                                             this.setState({})
                                         }}></Checkbox>,
                                         httpOnly: <Checkbox checked={x.httpOnly} onChange={e => {
                                             x.httpOnly = e.target.checked
                                             this.setState({})
                                         }}></Checkbox>,
-                                        expirationDate: <InputNumber style={{ width: '100%' }} min={0} value={x.expirationDate} onChange={value => {
-                                            x.expirationDate = value
+                                        secure: <Checkbox checked={x.secure} onChange={e => {
+                                            x.secure = e.target.checked
                                             this.setState({})
-                                        }}></InputNumber>,
+                                        }}></Checkbox>,
+                                        session: <Checkbox checked={x.session} onChange={e => {
+                                            x.session = e.target.checked
+                                            this.setState({})
+                                        }}></Checkbox>,
                                         sameSite: <Select style={{ width: '100%' }} value={x.sameSite} onChange={value => {
                                             x.sameSite = value
                                             this.setState({})
@@ -151,6 +174,56 @@ class CookieAction extends React.Component {
                                     }
                                 })}>
                                 </Table>
+                                <PlusOutlined style={{
+                                    position: 'absolute',
+                                    fontSize: '24px',
+                                    right: '120px',
+                                    bottom: '20px'
+                                }} onClick={() => {
+                                    cookies.push({})
+                                    this.setState({})
+                                }} />
+                                <VerticalAlignBottomOutlined style={{
+                                    position: 'absolute',
+                                    fontSize: '24px',
+                                    right: '80px',
+                                    bottom: '20px'
+                                }} onClick={() => {
+                                    ipcRenderer.invoke('export', {
+                                        defaultPath: cookies.length == 0 ? 'out.json' : cookies[0].domain + '.json', filters: [
+                                            { name: 'cookie', extensions: ['json'] }
+                                        ]
+                                    }).then(e => {
+                                        ipcRenderer.invoke('write', e.filePath, JSON.stringify(cookies)).then(ret => {
+                                            message.info(ret)
+                                        })
+                                    })
+                                }} />
+                                <VerticalAlignTopOutlined style={{
+                                    position: 'absolute',
+                                    fontSize: '24px',
+                                    right: '40px',
+                                    bottom: '20px'
+                                }} onClick={() => {
+                                    ipcRenderer.invoke('import', {
+                                        filters: [
+                                            { name: 'cookie', extensions: ['json'] }
+                                        ]
+                                    }).then(e => {
+                                        if (!e.filePaths[0]) return
+                                        ipcRenderer.invoke('read', e.filePaths[0]).then(ret => {
+                                            cookies.length = 0
+                                            cookies.push(...JSON.parse(ret).map(r => {
+                                                if (!r.url) {
+                                                    let { secure = false, domain = "", path = "" } = r
+                                                    r.url = (secure ? "https://" : "http://") + domain.replace(/^\./, "") + path
+                                                }
+                                                return r
+                                            }))
+                                            this.setState({})
+                                        })
+                                    })
+                                }} />
                                 <DeleteOutlined style={{
                                     position: 'absolute',
                                     fontSize: '24px',
@@ -159,15 +232,6 @@ class CookieAction extends React.Component {
                                 }} onClick={() => {
                                     let index = this.props.s.List.indexOf(cookies)
                                     this.props.s.List.splice(index, 1)
-                                    this.setState({})
-                                }}></DeleteOutlined>
-                                <PlusOutlined style={{
-                                    position: 'absolute',
-                                    fontSize: '24px',
-                                    right: '30px',
-                                    bottom: '20px'
-                                }} onClick={() => {
-                                    cookies.push({})
                                     this.setState({})
                                 }} />
                             </div>)}

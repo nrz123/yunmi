@@ -1,4 +1,17 @@
 const { ipcRenderer } = require('electron')
+delete window.process
+window.chrome = { runtime: {} }
+Object.defineProperty(navigator, 'webdriver', { get: () => false })
+Object.defineProperty(navigator, 'platform', { get: () => 'Win32' })
+Object.defineProperty(navigator, 'vendor', { get: () => 'Google Inc.' })
+Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 })
+Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 })
+const getParameter = WebGLRenderingContext.prototype.getParameter
+WebGLRenderingContext.prototype.getParameter = function (param) {
+    if (param === 37445) return 'Intel Inc.'
+    if (param === 37446) return 'Intel Iris OpenGL Engine'
+    return getParameter.call(this, param)
+}
 const getNodes = xpath => {
     let result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null)
     let arr = []
