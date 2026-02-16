@@ -58,7 +58,7 @@
     "webpack-cli": "^5.1.4"
   },
   "build": {
-    "productName": "云觅采集器",
+    "productName": "云觅",
     "extends": null,
     "appId": "com.yunmi.client",
     "asar": true,
