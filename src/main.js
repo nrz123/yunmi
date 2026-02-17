@@ -159,6 +159,24 @@ let createWindow = () => {
       case 'viewEnter': {
         let array = Array.from(args[0])
         args[1] && array.push('Enter')
+        view.webContents.sendInputEvent({
+          type: 'keyDown',
+          keyCode: 'A',
+          modifiers: ['control']
+        })
+        view.webContents.sendInputEvent({
+          type: 'keyUp',
+          keyCode: 'A',
+          modifiers: ['control']
+        })
+        view.webContents.sendInputEvent({
+          type: 'keyDown',
+          keyCode: 'Backspace'
+        })
+        view.webContents.sendInputEvent({
+          type: 'keyUp',
+          keyCode: 'Backspace'
+        })
         let f = () => {
           let t = array.shift()
           if (!t) return

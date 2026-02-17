@@ -181,6 +181,24 @@ class Run extends require('events').EventEmitter {
         this.log('enterText:' + text)
         let array = Array.from(text)
         enter && array.push('Enter')
+        this.view.webContents.sendInputEvent({
+            type: 'keyDown',
+            keyCode: 'A',
+            modifiers: ['control']
+        })
+        this.view.webContents.sendInputEvent({
+            type: 'keyUp',
+            keyCode: 'A',
+            modifiers: ['control']
+        })
+        this.view.webContents.sendInputEvent({
+            type: 'keyDown',
+            keyCode: 'Backspace'
+        })
+        this.view.webContents.sendInputEvent({
+            type: 'keyUp',
+            keyCode: 'Backspace'
+        })
         let f = () => {
             let t = array.shift()
             if (!t) return resolve()
