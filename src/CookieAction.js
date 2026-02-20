@@ -25,7 +25,7 @@ class CookieAction extends React.Component {
                         }}>清空缓存</Checkbox><br />
                         <div style={{ marginTop: '20px' }}>
                             {this.props.s.List.map(cookies => <div style={{ position: 'relative' }}>
-                                <Table rowClassName="CookieActionRow" locale={{ emptyText: '暂无数据' }} style={{ width: '100%', marginTop: '0px' }} pagination={{
+                                <Table rowClassName="CookieActionRow" locale={{ emptyText: '' }} style={{ width: '100%', marginTop: '0px' }} pagination={{
                                     position: ['none', 'bottomLeft'],
                                     pageSize: 5
                                 }} scroll={{ x: 600 }} columns={[

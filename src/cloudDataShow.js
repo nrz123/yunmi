@@ -136,7 +136,7 @@ class CloudDataShow extends React.Component {
                     })
                     this.setState({ dataSource: [], columns: [] })
                 }} close={() => this.setState({ delete: undefined })}></Delete>
-                <Table style={{ width: '100%', height: 'calc(100% - 60px)' }} scroll={{ y: true }} columns={this.state.columns} dataSource={this.state.dataSource} pagination={this.state.pagination} onChange={pagination => {
+                <Table style={{ width: '100%', height: 'calc(100% - 65px)' }} scroll={{ y: true }} columns={this.state.columns} dataSource={this.state.dataSource} pagination={this.state.pagination} onChange={pagination => {
                     this.updata(pagination)
                 }}></Table>
                 <div style={{

@@ -1,7 +1,7 @@
 import React from 'react'
 import './taskPage.css'
 import { Table, Button, message } from 'antd'
-import { PlusOutlined, PlayCircleOutlined, PauseCircleOutlined, VerticalAlignBottomOutlined, DeleteOutlined } from '@ant-design/icons'
+import { PlusOutlined, PlayCircleOutlined, PauseCircleOutlined, VerticalAlignBottomOutlined, DeleteOutlined, VerticalAlignTopOutlined } from '@ant-design/icons'
 import { taskList, taskSum, deleteTask, saveTask, loadTask } from './task.js'
 import Browser from './browser.js'
 import DataShow from './dataShow'
@@ -53,25 +53,7 @@ class TaskPage extends React.Component {
                         this.updata(this.state.pagination)
                     })
                 }} close={() => this.setState({ showDelete: false })}></Delete>
-                <div style={{ width: '100%', height: '40px', float: 'left' }}>
-                    <Button icon={<PlusOutlined style={{
-                        fontSize: '24px'
-                    }} />} onClick={() => {
-                        ipcRenderer.invoke('import', {
-                            filters: [
-                                { name: 'Task', extensions: ['kld'] }
-                            ]
-                        }).then(e => {
-                            if (!e.filePaths[0]) return
-                            let name = e.filePaths[0]
-                            ipcRenderer.invoke('read', name).then(ret => {
-                                if (!ret) return
-                                saveTask({ id: guid(), name: name.substring(name.lastIndexOf('\\') + 1, name.lastIndexOf('.')), step: ret }).then(data => data == 'success' && this.updata(this.state.pagination))
-                            })
-                        })
-                    }} style={{ width: '100%', height: '100%' }}></Button>
-                </div>
-                <Table style={{ width: '100%', height: 'calc(100% - 105px)' }} pagination={this.state.pagination} onChange={pagination => {
+                <Table style={{ width: '100%', height: 'calc(100% - 65px)' }} pagination={this.state.pagination} onChange={pagination => {
                     this.updata(pagination)
                 }} columns={[{
                     title: <div style={{
@@ -161,6 +143,25 @@ class TaskPage extends React.Component {
                         </div>
                     }
                 })} scroll={{ y: true }} />
+                <VerticalAlignTopOutlined style={{
+                    position: 'absolute',
+                    fontSize: '30px',
+                    right: '20px',
+                    bottom: '15px'
+                }} onClick={() => {
+                    ipcRenderer.invoke('import', {
+                        filters: [
+                            { name: 'Task', extensions: ['kld'] }
+                        ]
+                    }).then(e => {
+                        if (!e.filePaths[0]) return
+                        let name = e.filePaths[0]
+                        ipcRenderer.invoke('read', name).then(ret => {
+                            if (!ret) return
+                            saveTask({ id: guid(), name: name.substring(name.lastIndexOf('\\') + 1, name.lastIndexOf('.')), step: ret }).then(data => data == 'success' && this.updata(this.state.pagination))
+                        })
+                    })
+                }} />
             </div>
         )
     }

@@ -31,7 +31,9 @@ let login = () => net.fetch(protocal + serverHost + '/users/login', {
   body: JSON.stringify({
     password: password
   })
-}).then(res => res.json())
+}).then(res => res.json()).catch(e => {
+  console.log('网络错误')
+})
 ipcMain.on('downloaddir', event => event.returnValue = (app.isPackaged ? path.dirname(app.getPath('exe')) : appPath) + '/' + downloaddir)
 ipcMain.on('protocal', event => event.returnValue = protocal)
 ipcMain.on('serverHost', event => event.returnValue = serverHost)
@@ -277,7 +279,7 @@ app.on('activate', () => {
 })
 ipcMain.handle('export', (event, options) => dialog.showSaveDialog(options))
 ipcMain.handle('import', (event, options) => dialog.showOpenDialog(options))
-const importData = (id, datas) => net.fetch(serverHost + "/users/importData", {
+const importData = (id, datas) => net.fetch(protocal + serverHost + "/users/importData", {
   method: "POST",
   headers: {
     'Content-Type': 'application/json'
@@ -286,6 +288,8 @@ const importData = (id, datas) => net.fetch(serverHost + "/users/importData", {
     id: id,
     datas: datas
   })
+}).catch(e => {
+  console.log('网络错误')
 })
 ipcMain.on('excelImport', async (event, id, path) => {
   let workbookReader = new Excel.stream.xlsx.WorkbookReader(path, {
@@ -297,7 +301,7 @@ ipcMain.on('excelImport', async (event, id, path) => {
     for await (const row of worksheetReader) {
       let data = []
       if (!length) length = row.values.length - 1
-      for (let i = 0; i < length; i++)data[i] = row.values[i + 1] ? row.values[i + 1] : ''
+      for (let i = 0; i < length; i++)data[i] = { key: '' + i, value: row.values[i + 1] ? row.values[i + 1] : '' }
       datas.push(data)
       if (row._number == 1) {
         await importData(id, datas)
