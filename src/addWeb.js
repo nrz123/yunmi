@@ -1,6 +1,6 @@
 import React from 'react'
 import './home.css'
-import { Table, Button, Input, Select, Modal, Collapse,  Popover } from 'antd'
+import { Table, Button, Input, Select, Modal, Collapse, Popover } from 'antd'
 import { PlusOutlined, SaveOutlined, DeleteOutlined, EditOutlined, UpOutlined, DownOutlined } from '@ant-design/icons'
 import HSplit from './hsplit'
 import VSplit from './vsplit'
@@ -9,7 +9,7 @@ import moment from 'moment'
 import 'moment/locale/zh-cn'
 const { Option } = Select
 const { TextArea } = Input
-const { Panel} = Collapse
+const { Panel } = Collapse
 const { ipcRenderer } = window.require('electron')
 moment.locale('zh-cn')
 class AddWeb extends React.Component {
@@ -20,7 +20,7 @@ class AddWeb extends React.Component {
             this.placeholders = typeof (this.page.placeholders) == 'string' ? JSON.parse(this.page.placeholders) : this.page.placeholders
             this.directorys = typeof (this.page.directorys) == 'string' ? JSON.parse(this.page.directorys) : this.page.directorys
         } else {
-            this.page = { id: this.props.pid, name: '', pagehtml: '' }
+            this.page = { id: this.props.pid, name: this.props.pageName, pagehtml: '' }
             this.directorys = []
             this.placeholders = []
         }

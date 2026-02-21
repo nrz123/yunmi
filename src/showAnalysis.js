@@ -69,6 +69,7 @@ class ShowAnalysis extends React.Component {
     updata = (pageIndex, pageSize) => {
         let total = 0
         let nodeDataArray = []
+        let mergeMap = {}
         let linkDataArray = []
         Promise.all(Array.from(this.taskIds).map(taskId => new Promise(resolve => {
             ipcRenderer.invoke('fetch', global.serverHost + "/users/dataSum", {
@@ -97,13 +98,22 @@ class ShowAnalysis extends React.Component {
                     datas.forEach(data => {
                         let keyMap = {}
                         nodes.forEach(node => {
-                            let text = data[node.key]
+                            let text = data[node.column]
                             if (!text) return
-                            let key = keyMap[node.key] = node.group ? md5(node.group + text) : md5(taskId + node.key + data['column6fd9d90906ab18e9513e99dcdd4e3536'])
+                            let key = keyMap[node.key] = nodeDataArray.length + 1
+                            if (node.group) {
+                                let mkey = md5(text) + node.group
+                                if (mergeMap[mkey]) {
+                                    keyMap[node.key] = mergeMap[mkey]
+                                    return
+                                } else {
+                                    mergeMap[mkey] = key
+                                }
+                            }
                             nodeDataArray.push({
                                 key: key,
                                 taskId: taskId,
-                                columnId: node.key,
+                                column: node.column,
                                 text: text
                             })
                         })
@@ -111,9 +121,7 @@ class ShowAnalysis extends React.Component {
                             let fromkey = keyMap[link.from]
                             let tokey = keyMap[link.to]
                             if (!fromkey || !tokey || fromkey == tokey) return
-                            let key = md5(fromkey + tokey)
                             linkDataArray.push({
-                                key: key,
                                 from: fromkey,
                                 to: tokey,
                                 text: link.text

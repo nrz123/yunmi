@@ -118,7 +118,7 @@ class Cloud extends React.Component {
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                             <CloudUploadOutlined onClick={() => {
                                 loadPage(task.id).then(page => {
-                                    this.props.addPane(<AddWeb ref={ref} tabKey={task.id + '-addWeb'} tab={task.name + '-添加网页'} page={page} pid={task.id} addPane={this.props.addPane}></AddWeb>)
+                                    this.props.addPane(<AddWeb ref={ref} tabKey={task.id + '-addWeb'} tab={task.name + '-添加网页'} page={page} pid={task.id} pageName={task.name} addPane={this.props.addPane}></AddWeb>)
                                 })
                             }} style={{ fontSize: '30px' }} />
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

@@ -1,6 +1,6 @@
 import React from 'react'
 import './home.css'
-import { Table, Button } from 'antd'
+import { Table } from 'antd'
 import { PlusOutlined, ZoomInOutlined, VerticalAlignBottomOutlined, DeleteOutlined } from '@ant-design/icons'
 import { modelList, modelSum, deleteModel, loadModel } from './model.js'
 import guid from './uuid'
@@ -27,12 +27,6 @@ class DataAnalysis extends React.Component {
         this.updata(this.state.pagination)
     }
     componentDidMount() {
-        global.upmodelState = modelState => {
-            let model = this.state.models.find(model => model.id == modelState.id)
-            if (!model) return
-            model.state = modelState.state
-            this.setState({})
-        }
         this.updata(this.state.pagination)
     }
     updata = pagination => {
@@ -48,15 +42,11 @@ class DataAnalysis extends React.Component {
     render() {
         return (
             <div style={{ width: '100%', height: '100%' }}>
-                <Delete visible={this.state.showDelete} title="确定删除" ok={() => deleteModel(this.state.deleteId)} close={() => this.setState({ showDelete: false })}></Delete>
-                <div style={{ width: '100%', height: '40px', float: 'left' }}>
-                    <Button icon={<PlusOutlined style={{
-                        fontSize: '24px'
-                    }} />} onClick={() => {
-                        this.props.addPane(<CreateAnalysis ref={ref} tabKey={guid()} tab={'新建模板'} modelName={'新建模板'}></CreateAnalysis>)
-                    }} style={{ width: '100%', height: '100%' }}></Button>
-                </div>
-                <Table style={{ width: '100%', height: 'calc(100% - 105px)' }} pagination={this.state.pagination} onChange={pagination => {
+                <Delete visible={this.state.showDelete} title="确定删除" ok={() => deleteModel(this.state.deleteId).then(ret => {
+                    if (ret != 'success') return
+                    this.updata(this.state.pagination)
+                })} close={() => this.setState({ showDelete: false })}></Delete>
+                <Table style={{ width: '100%', height: 'calc(100% - 65px)' }} pagination={this.state.pagination} onChange={pagination => {
                     this.updata(pagination)
                 }} columns={[{
                     title: <div style={{
@@ -107,6 +97,14 @@ class DataAnalysis extends React.Component {
                         </div>
                     }
                 })} scroll={{ y: true }} />
+                <PlusOutlined style={{
+                    position: 'absolute',
+                    fontSize: '30px',
+                    right: '20px',
+                    bottom: '15px'
+                }} onClick={() => {
+                    this.props.addPane(<CreateAnalysis ref={ref} tabKey={guid()} tab={'新建模板'} modelName={'新建模板'}></CreateAnalysis>)
+                }} />
             </div>
         )
     }

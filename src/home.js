@@ -33,7 +33,6 @@ class Home extends React.Component {
         global.downloaddir = ipcRenderer.sendSync('downloaddir')
         global.single = ipcRenderer.sendSync('single')
         global.upcloudState = () => { }
-        global.upmodelState = () => { }
         global.runState = {}
         global.setTitle = (key, title) => {
             let tabPane = this.state.tabPanes.find(tab => tab.key == key)
@@ -49,9 +48,6 @@ class Home extends React.Component {
                 switch (mess.type) {
                     case 'taskState': {
                         global.upcloudState(mess)
-                    } break
-                    case 'modelState': {
-                        global.upmodelState(mess)
                     } break
                     case 'mess': {
                         message.info(mess.mess)

@@ -6,7 +6,6 @@ import { Select, Button, Input, Modal, Popover } from 'antd'
 import { EditOutlined, DeleteOutlined, UpOutlined, DownOutlined } from '@ant-design/icons'
 import { taskList } from './task'
 import { saveModel } from './model'
-import guid from './uuid.js'
 const { Option } = Select
 const { TextArea } = Input
 const { ipcRenderer } = window.require('electron')
@@ -66,7 +65,7 @@ class CreateAnalysis extends React.Component {
             {
                 click: (e, thisObj) => {
                     if (selectNode) {
-                        selectNode != thisObj && !this.diagram.findLinkForKey(selectNode.key + thisObj.key) && !this.diagram.findLinkForKey(thisObj.key + selectNode.key) && this.diagram.model.addLinkData({ key: selectNode.key + thisObj.key, from: selectNode.key, to: thisObj.key, text: '关系' })
+                        selectNode != thisObj && !this.diagram.model.linkDataArray.find(d => d.from == selectNode.key && d.to == thisObj.key) && !this.diagram.model.linkDataArray.find(d => d.from == thisObj.key && d.to == selectNode.key) && this.diagram.model.addLinkData({ from: selectNode.key, to: thisObj.key, text: '关系' })
                         this.diagram.model.setDataProperty(selectNode.data, 'color', 'white')
                         selectNode = undefined
                     } else {
@@ -80,37 +79,28 @@ class CreateAnalysis extends React.Component {
                     if (thisObj.containingGroup) {
                         let data = thisObj.containingGroup.data
                         thisObj.containingGroup = null
-                        this.diagram.model.nodeDataArray.find(d => d.group = data.key) || this.diagram.model.removeNodeData(data)
+                        this.diagram.model.nodeDataArray.find(d => d.group == data.key) || this.diagram.model.removeNodeData(data)
                     } else {
-                        let key = guid()
-                        this.diagram.model.addNodeData({ key: key, isGroup: true, text: '合并', background: '#2b71ed' })
-                        thisObj.containingGroup = this.diagram.findNodeForKey(key)
+                        let data = { isGroup: true, text: '合并', background: '#2b71ed' }
+                        this.diagram.model.addNodeData(data)
+                        thisObj.containingGroup = this.diagram.findNodeForData(data)
                     }
                 },
                 mouseDragEnter: (e, thisObj) => this.diagram.model.setDataProperty(thisObj.data, 'color', 'blue'),
                 mouseDragLeave: (e, thisObj) => this.diagram.model.setDataProperty(thisObj.data, 'color', thisObj == selectNode ? 'red' : 'white'),
                 mouseDrop: (e, thisObj) => {
                     let node = e.diagram.selection.first()
-                    if (node.data.regs) {
-                        if (node.containingGroup) {
-                            let data = node.containingGroup.data
-                            node.containingGroup = null
-                            this.diagram.model.nodeDataArray.find(d => d.group = data.key) || this.diagram.model.removeNodeData(data)
-                        }
-                        if (!thisObj.containingGroup) {
-                            let key = guid()
-                            this.diagram.model.addNodeData({ key: key, isGroup: true, text: '合并', background: '#2b71ed' })
-                            thisObj.containingGroup = this.diagram.findNodeForKey(key)
-                        }
-                        node.containingGroup = thisObj.containingGroup
-                    } else {
-                        this.diagram.remove(node)
-                        if (node.data.taskId != thisObj.data.taskId) return
-                        if (thisObj.data.columns.find(column => column.key == node.data.columns[0].key)) return
-                        thisObj.data.columns = thisObj.data.columns.concat(node.data.columns)
-                        thisObj.data.SampleText = thisObj.data.columns.map(column => column.text).join(';;;')
-                        this.diagram.model.setDataProperty(thisObj.data, 'text', this.calc(thisObj.data))
+                    if (node.containingGroup) {
+                        let data = node.containingGroup.data
+                        node.containingGroup = null
+                        this.diagram.model.nodeDataArray.find(d => d.group == data.key) || this.diagram.model.removeNodeData(data)
                     }
+                    if (!thisObj.containingGroup) {
+                        let data = { isGroup: true, text: '合并', background: '#2b71ed' }
+                        this.diagram.model.addNodeData(data)
+                        thisObj.containingGroup = this.diagram.findNodeForData(data)
+                    }
+                    node.containingGroup = thisObj.containingGroup
                 },
                 contextMenu: $("ContextMenu",
                     $("ContextMenuButton",
@@ -161,7 +151,7 @@ class CreateAnalysis extends React.Component {
                         if (node.containingGroup) {
                             let data = node.containingGroup.data
                             node.containingGroup = null
-                            this.diagram.model.nodeDataArray.find(d => d.group = data.key) || this.diagram.model.removeNodeData(data)
+                            this.diagram.model.nodeDataArray.find(d => d.group == data.key) || this.diagram.model.removeNodeData(data)
                         }
                         node.containingGroup = thisObj
                     }
@@ -206,7 +196,7 @@ class CreateAnalysis extends React.Component {
             let d = data[0]
             this.setState({
                 taskId: id, columns: d ? Object.keys(d).filter(c => c != 'column6fd9d90906ab18e9513e99dcdd4e3536' && !c.startsWith('hash')).map(key => {
-                    return { key: key, text: d[key] }
+                    return { column: key, text: d[key] }
                 }) : []
             })
         })
@@ -348,7 +338,7 @@ class CreateAnalysis extends React.Component {
                             divClassName='palette-analysis'
                             nodeDataArray={
                                 this.state.columns.map(column => {
-                                    return { taskId: this.state.taskId, ...column, SampleText: column.text, columns: [column] }
+                                    return { taskId: this.state.taskId, ...column, SampleText: column.text }
                                 })
                             }
                             onModelChange={() => { }}
