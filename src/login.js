@@ -39,7 +39,7 @@ class Login extends React.Component {
                         </Select>} placeholder="服务器地址" />
                     </Form.Item>
                     <Form.Item name="password">
-                        <Input placeholder="密码" />
+                        <Input.Password placeholder="密码" />
                     </Form.Item>
                     <Form.Item>
                         <Button style={{ width: '100%' }} type="primary" htmlType="submit">
