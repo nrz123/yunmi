@@ -1,5 +1,9 @@
 # yunmi
 ## 云觅是一款数据处理软件，集成了数据采集，数据分析，数据发布等诸多功能
+
+## 软件运行示例：
+## https://www.bilibili.com/video/BV1fVZyBeEYp/
+
 ## 单机模式仅支持数据采集功能，如数据量巨大或需要数据分析等功能，建议使用集群采集功能，请先部署服务器端，地址如下：
 ## https://github.com/nrz123/yunmi-server
 
