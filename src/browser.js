@@ -70,7 +70,7 @@ class Browser extends React.Component {
         document.ondragstart = e => false
         this.flowData = new FlowData(this.step, this.select, this.state.s)
     }
-    componentDidMount() {
+    async componentDidMount() {
         ipcRenderer.on('XPath-' + this.props.tabKey, (event, value) => {
             this.XPaths = value
             let { absXPaths, relXPaths, useLoop } = this.XPaths
@@ -79,10 +79,10 @@ class Browser extends React.Component {
         let webview = document.getElementById(this.props.tabKey)
         let width = webview.offsetWidth
         let height = webview.offsetHeight
-        ipcRenderer.invoke('viewManage', this.props.tabKey, 'viewShow').catch(e => { })
+        await ipcRenderer.invoke('viewManage', this.props.tabKey, 'viewShow').catch(e => { })
         ipcRenderer.invoke('viewManage', this.props.tabKey, 'viewResize', { x: 200, y: 113, width: width, height: height }).catch(e => { })
         this.step.proxy && ipcRenderer.invoke('viewManage', this.props.tabKey, 'setProxy', this.step.proxy).catch(e => { })
-        ipcRenderer.invoke('viewManage', this.props.tabKey, 'setUserAgent', this.step.userAgent ? this.step.userAgent : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36").catch(e => { })
+        this.step.userAgent && ipcRenderer.invoke('viewManage', this.props.tabKey, 'setUserAgent', this.step.userAgent).catch(e => { })
         let s = stepfind(this.step, step => step.nodeName == 'CookieAction')[0]
         s && ipcRenderer.invoke('viewManage', this.props.tabKey, 'setCookies', s.List[0]).catch(e => { })
         ipcRenderer.invoke('viewManage', this.props.tabKey, 'loadURL', this.state.url).catch(e => { })

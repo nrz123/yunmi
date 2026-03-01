@@ -103,9 +103,7 @@ let createWindow = () => {
           })
           view.viewMode = true
           webContentsSet.add(view.webContents)
-          view.webContents.setUserAgent(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
-          )
+          view.webContents.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
           view.webContents.on('destroyed', () => {
             webContentsSet.delete(view.webContents)
           })
@@ -203,9 +201,6 @@ let createWindow = () => {
       } break
       case 'setProxy': {
         view.webContents.session.setProxy({ proxyRules: args[0] })
-      } break
-      case 'setUserAgent': {
-        view.webContents.setUserAgent(args[0])
       } break
       default: return view.webContents[type](...args)
     }

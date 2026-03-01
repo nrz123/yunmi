@@ -76,7 +76,7 @@ class Run extends require('events').EventEmitter {
         this.view.webContents.setWindowOpenHandler(detail => {
             return { action: 'deny' }
         })
-        this.step.userAgent && this.view.webContents.setUserAgent(this.step.userAgent ? this.step.userAgent : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
+        this.view.webContents.setUserAgent(this.step.userAgent ? this.step.userAgent : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
         this.view.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
             if (this.view.webContents) details.requestHeaders['User-Agent'] = this.view.webContents.getUserAgent()
             details.requestHeaders['Sec-CH-UA'] = '"Google Chrome";v="137", "Chromium";v="137"'
